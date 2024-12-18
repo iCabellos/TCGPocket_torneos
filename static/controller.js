@@ -188,7 +188,7 @@ function endRound() {
         return;
     }
 
-    const selects = Array.from(bracketContent.querySelectorAll('select'));  // Convertimos NodeList a Array
+    const selects = Array.from(bracketContent.querySelectorAll('select'));
     let roundResults = [];
     let winners = [];
 
@@ -237,17 +237,34 @@ function declareWinner() {
 
     localStorage.setItem('players', JSON.stringify(players));
 
-    alert(`¡El ganador del Torneo ${tournamentId} es ${winner} con ${scores[winner]} puntos!`);
+    // Crear una nueva card con el ganador y los combates
+    const winnerCard = document.getElementById('lastWinnerCard');
+    winnerCard.classList.remove('hidden'); // Aseguramos que la card sea visible
+
+    // Limpiar cualquier contenido previo
+    const logsWinner = document.getElementById('logsWinner');
+    logsWinner.innerHTML = '';
+
+    // Mostrar el ganador
+    const winnerItem = document.createElement('li');
+    winnerItem.textContent = `${winner} ha ganado el torneo con ${scores[winner]} puntos.`;
+
+    // Añadir el log del ganador
+    logsWinner.appendChild(winnerItem);
+
+    // Mostrar los combates del ganador
+    players
+        .filter(player => player.name === winner)
+        .forEach(player => {
+            const matches = matchHistory[player.name] || [];
+            const matchItems = matches.map(opponent => `<li>${player.name} vs ${opponent}</li>`).join('');
+            const matchList = document.createElement('ul');
+            matchList.innerHTML = matchItems;
+            logsWinner.appendChild(matchList);
+        });
 
     updatePlayerStats();
     document.getElementById('bracket').classList.add('hidden');
-
-    // Reiniciar los puntos de todos los jugadores
-    scores = {};
-    players.forEach(player => {
-        scores[player.name] = 0;
-    });
-    localStorage.setItem('scores', JSON.stringify(scores));
 }
 
 
@@ -310,4 +327,22 @@ function saveHistory(tournamentId) {
     }
 }
 
-window.onload = loadPlayers;
+function checkWinnerVisibility() {
+    const winnerCard = document.getElementById('lastWinnerCard');
+
+    // Comprobar si hay un ganador registrado en el localStorage
+    const players = JSON.parse(localStorage.getItem('players')) || [];
+    const lastWinner = players.find(player => player.tournamentsWon > 0);
+
+    // Si no hay ganador, ocultamos el div; si hay, lo mostramos
+    if (!lastWinner) {
+        winnerCard.classList.add('hidden');
+    } else {
+        winnerCard.classList.remove('hidden');
+    }
+}
+
+window.onload = function() {
+    loadPlayers();
+    checkWinnerVisibility();
+};
