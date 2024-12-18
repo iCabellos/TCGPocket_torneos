@@ -1,0 +1,302 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Torneos Suizos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffcc00;
+            color: #3b4cca;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 2px solid #3b4cca;
+            border-radius: 10px;
+            margin: 10px;
+            padding: 20px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            width: 80%;
+            max-width: 400px;
+        }
+
+        button {
+            background-color: #ff0000;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #cc0000;
+        }
+
+        input, select {
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 10px;
+            color: #3b4cca;
+        }
+
+        .bracket {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Torneo TCG Pocket</h1>
+        <h3>Registro de Torneos - Formato Suizo</h3>
+        <div id="registration" class="card">
+            <h2>Registro</h2>
+            <input type="text" id="playerName" placeholder="Nombre del jugador">
+            <input type="text" id="playerCombo" placeholder="Combo principal (3 cartas)">
+            <button onclick="registerPlayer()">Registrar</button>
+        </div>
+        <div id="playerList" class="card">
+            <h2>Lista de Jugadores</h2>
+            <ul id="players"></ul>
+        </div>
+        <div id="startTournament" class="card">
+            <h2>Iniciar Torneo</h2>
+            <button onclick="startTournament()">Iniciar</button>
+        </div>
+        <div id="bracket" class="card hidden">
+            <h2>Bracket del Torneo</h2>
+            <div class="bracket" id="bracketContent"></div>
+            <button onclick="endRound()">Finalizar Ronda</button>
+        </div>
+        <div id="history" class="card hidden">
+            <h2>Historial de Partidas</h2>
+            <ul id="historyList"></ul>
+        </div>
+        <div id="playerStats" class="card hidden">
+            <h2>Estadísticas de Jugadores</h2>
+            <ul id="statsList"></ul>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let scores = {};
+        let history = [];
+        let round = 0;
+        let tournamentId = 0;  // Identificador único para cada torneo
+    
+        function loadPlayers() {
+            // Cargar jugadores, puntuaciones, historial y torneo desde el localStorage, si existen
+            players = JSON.parse(localStorage.getItem('players')) || [];
+            scores = JSON.parse(localStorage.getItem('scores')) || {};
+            history = JSON.parse(localStorage.getItem('history')) || [];
+            round = parseInt(localStorage.getItem('round')) || 0;
+            tournamentId = parseInt(localStorage.getItem('tournamentId')) || 0;
+    
+            // Si no existen los puntos en el localStorage, inicializarlos
+            if (Object.keys(scores).length === 0) {
+                players.forEach(player => {
+                    scores[player.name] = 0; // Inicializar los puntos de cada jugador
+                });
+                localStorage.setItem('scores', JSON.stringify(scores)); // Guardar los puntos en el localStorage
+            }
+    
+            updatePlayerList();
+            updateHistory();
+            updatePlayerStats();
+        }
+    
+        function registerPlayer() {
+            const playerName = document.getElementById('playerName').value.trim();
+            const playerCombo = document.getElementById('playerCombo').value.trim();
+    
+            if (playerName && playerCombo) {
+                if (!scores[playerName]) {
+                    players.push({ name: playerName, combo: playerCombo, tournamentsWon: 0 });
+                    scores[playerName] = 0;
+    
+                    localStorage.setItem('players', JSON.stringify(players));
+                    localStorage.setItem('scores', JSON.stringify(scores));
+    
+                    document.getElementById('playerName').value = '';
+                    document.getElementById('playerCombo').value = '';
+                    updatePlayerList();
+                } else {
+                    alert('El jugador ya existe.');
+                }
+            } else {
+                alert('Por favor, complete todos los campos.');
+            }
+        }
+    
+        function updatePlayerList() {
+            const playersList = document.getElementById('players');
+            playersList.innerHTML = '';
+            players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = `${player.name} - Puntos: ${scores[player.name]} - Combo: ${player.combo}`;
+                playersList.appendChild(li);
+            });
+        }
+    
+        function updatePlayerStats() {
+            const statsList = document.getElementById('statsList');
+            statsList.innerHTML = '';
+            players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = `${player.name} - Torneos ganados: ${player.tournamentsWon}`;
+                statsList.appendChild(li);
+            });
+        }
+    
+        function generateMatchCode() {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let code = '';
+            for (let i = 0; i < 5; i++) {
+                const randomIndex = Math.floor(Math.random() * characters.length);
+                code += characters[randomIndex];
+            }
+            return code;
+        }
+    
+        function startTournament() {
+            if (players.length < 2) {
+                alert('Se necesitan al menos 2 jugadores para iniciar el torneo.');
+                return;
+            }
+            // Reiniciar puntos de todos los jugadores al comenzar un nuevo torneo
+            scores = {};
+            players.forEach(player => {
+                scores[player.name] = 0; // Reiniciar los puntos a 0
+            });
+            localStorage.setItem('scores', JSON.stringify(scores));
+    
+            // Crear un nuevo torneo con un identificador único
+            tournamentId++;
+            localStorage.setItem('tournamentId', tournamentId); // Guardar el id del torneo
+            document.getElementById('bracket').classList.remove('hidden');
+            round = 1; // Iniciar la ronda 1
+            localStorage.setItem('round', round);
+            displayMatches();
+        }
+    
+        function displayMatches() {
+            const bracketContent = document.getElementById('bracketContent');
+            bracketContent.innerHTML = `<h3>Ronda ${round}</h3>`;
+    
+            // Ordenar jugadores por puntaje para el formato suizo
+            players.sort((a, b) => scores[b.name] - scores[a.name]);
+    
+            for (let i = 0; i < players.length; i += 2) {
+                const player1 = players[i] ? players[i].name : 'Bye';
+                const player2 = players[i + 1] ? players[i + 1].name : 'Bye';
+                const matchCode = generateMatchCode();  // Generar el código único
+                const match = document.createElement('div');
+                match.innerHTML = `
+                    <strong>Match ${i / 2 + 1}:</strong> 
+                    ${player1} vs ${player2}
+                    <br>
+                    Código: <strong>${matchCode}</strong>
+                    <br>
+                    <label for="winner${i}">Selecciona el ganador:</label>
+                    <select id="winner${i}">
+                        ${player1 !== 'Bye' ? `<option value="${player1}">${player1}</option>` : ''}
+                        ${player2 !== 'Bye' ? `<option value="${player2}">${player2}</option>` : ''}
+                    </select>
+                `;
+                bracketContent.appendChild(match);
+            }
+        }
+    
+        function endRound() {
+            const bracketContent = document.getElementById('bracketContent');
+            const selects = bracketContent.querySelectorAll('select');
+    
+            let roundResults = [];
+    
+            selects.forEach(select => {
+                const winner = select.value;
+                if (winner) {
+                    scores[winner] += 3; // Sumar puntos al ganador
+                    roundResults.push(`${winner} gana +3 puntos`);
+                }
+            });
+    
+            // Actualizar historial con el torneo y la ronda
+            history.push(`Torneo ${tournamentId} - Ronda ${round}: ${roundResults.join(', ')}`);
+            round++;
+            localStorage.setItem('scores', JSON.stringify(scores));
+            localStorage.setItem('history', JSON.stringify(history));
+            localStorage.setItem('round', round);
+    
+            updatePlayerList();
+            updateHistory();
+            displayMatches();
+    
+            // Condición de victoria: verificar si algún jugador ha ganado el torneo
+            if (round > players.length) {
+                declareWinner();
+            }
+        }
+    
+        function declareWinner() {
+            // Buscar el jugador con más puntos
+            let winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+    
+            // Actualizar torneos ganados
+            players.forEach(player => {
+                if (player.name === winner) {
+                    player.tournamentsWon++;
+                }
+            });
+    
+            // Guardar los cambios en el localStorage
+            localStorage.setItem('players', JSON.stringify(players));
+    
+            alert(`¡El ganador del Torneo ${tournamentId} es ${winner} con ${scores[winner]} puntos!`);
+            updatePlayerStats();
+        }
+    
+        function updateHistory() {
+            const historyList = document.getElementById('historyList');
+            const historyCard = document.getElementById('history');
+            historyList.innerHTML = '';
+    
+            history.forEach(event => {
+                const li = document.createElement('li');
+                li.textContent = event;
+                historyList.appendChild(li);
+            });
+    
+            historyCard.classList.remove('hidden');
+        }
+    
+        window.onload = loadPlayers;
+    </script>
+</body>
+</html>
