@@ -152,16 +152,35 @@
             display: none;
         }
 
+        /* Estilos para agrupar las cartas en filas */
+        .card-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .card-group > .card {
+            width: 100%;
+            max-width: 400px;
+        }
+
         /* Estilos específicos para la vista de tablet en horizontal */
         @media (min-width: 768px) and (max-width: 1024px) {
-            .card {
+            .card-group > .card {
                 width: 45%; /* Ajustamos el tamaño de las cartas en tablet en horizontal */
             }
+        }
 
-            .container {
-                flex-direction: row; /* Las cartas se colocan en fila */
-                flex-wrap: wrap;
-                justify-content: center;
+        /* Estilos para asegurar que las cartas se vean de forma horizontal en pantallas grandes */
+        @media (min-width: 1025px) {
+            .card-group {
+                flex-direction: row;
+                gap: 30px;
+            }
+
+            .card-group > .card {
+                width: 400px; /* Las cartas no se expanden más allá de este tamaño */
             }
         }
     </style>
@@ -171,37 +190,49 @@
         <h1>Torneo TCG Pocket</h1>
         <h3>Registro de Torneos - Formato Suizo</h3>
 
-        <div id="registration" class="card">
-            <h2>Registro</h2>
-            <input type="text" id="playerName" placeholder="Nombre del jugador">
-            <input type="text" id="playerCombo" placeholder="Combo principal (3 cartas)">
-            <button onclick="registerPlayer()">Registrar</button>
+        <!-- Grupo de cartas para Registro y Lista de Jugadores -->
+        <div class="card-group">
+            <div id="registration" class="card">
+                <h2>Registro</h2>
+                <input type="text" id="playerName" placeholder="Nombre del jugador">
+                <input type="text" id="playerCombo" placeholder="Combo principal (3 cartas)">
+                <button onclick="registerPlayer()">Registrar</button>
+            </div>
+
+            <div id="playerList" class="card">
+                <h2>Lista de Jugadores</h2>
+                <ul id="players"></ul>
+            </div>
         </div>
 
-        <div id="playerList" class="card">
-            <h2>Lista de Jugadores</h2>
-            <ul id="players"></ul>
+        <!-- Grupo de cartas para Iniciar Torneo y Bracket -->
+        <div class="card-group">
+            <div id="startTournament" class="card">
+                <h2>Iniciar Torneo</h2>
+                <button onclick="startTournament()">Iniciar</button>
+            </div>
+
+            <div id="bracket" class="card hidden">
+                <h2>Bracket del Torneo</h2>
+                <div class="bracket" id="bracketContent"></div>
+                <button onclick="endRound()">Finalizar Ronda</button>
+            </div>
         </div>
 
-        <div id="startTournament" class="card">
-            <h2>Iniciar Torneo</h2>
-            <button onclick="startTournament()">Iniciar</button>
+        <!-- Grupo de cartas para Historial de Partidas -->
+        <div class="card-group">
+            <div id="history" class="card hidden">
+                <h2>Historial de Partidas</h2>
+                <ul id="historyList"></ul>
+            </div>
         </div>
 
-        <div id="bracket" class="card hidden">
-            <h2>Bracket del Torneo</h2>
-            <div class="bracket" id="bracketContent"></div>
-            <button onclick="endRound()">Finalizar Ronda</button>
-        </div>
-
-        <div id="history" class="card hidden">
-            <h2>Historial de Partidas</h2>
-            <ul id="historyList"></ul>
-        </div>
-
-        <div id="playerStats" class="card hidden">
-            <h2>Estadísticas de Jugadores</h2>
-            <ul id="statsList"></ul>
+        <!-- Grupo de cartas para Estadísticas de Jugadores -->
+        <div class="card-group">
+            <div id="playerStats" class="card hidden">
+                <h2>Estadísticas de Jugadores</h2>
+                <ul id="statsList"></ul>
+            </div>
         </div>
     </div>
 
